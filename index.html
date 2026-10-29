@@ -62,12 +62,4 @@
  paint();if(btn)btn.addEventListener('click',()=>{body.dataset.theme=body.dataset.theme==='dark'?'light':'dark';localStorage.setItem('thd_theme',body.dataset.theme);paint()});
 })();
 </script>
-<script>
-(function(){
- const body=document.body, btn=document.querySelector('#themeToggle');
- const saved=localStorage.getItem('thd_theme')||'light'; body.dataset.theme=saved;
- function paint(){if(btn)btn.textContent=body.dataset.theme==='dark'?'☀️ Giao diện sáng':'🌙 Giao diện tối'}
- paint(); if(btn)btn.addEventListener('click',()=>{body.dataset.theme=body.dataset.theme==='dark'?'light':'dark';localStorage.setItem('thd_theme',body.dataset.theme);paint()});
-})();
-</script>
 </body></html>
