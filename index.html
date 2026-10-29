@@ -25,8 +25,9 @@
     </section>
     <section class="card field">
       <label for="attachment">Cậu có muốn kèm ảnh không?</label>
-      <input id="attachment" type="file" accept="image/*">
-      <p class="hint">Tính năng tải ảnh chưa được bật. Không gửi ảnh có thông tin riêng tư của người khác.</p>
+      <input id="attachment" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+      <p class="hint">Chỉ nhận 1 ảnh JPG, PNG, WEBP hoặc GIF, tối đa 10 MB. Không hỗ trợ video. Không gửi ảnh có thông tin riêng tư của người khác.</p>
+      <div id="attachmentPreview" class="attachment-preview" hidden></div>
     </section>
     <div class="actions"><button class="primary" type="submit">Gửi confession</button><button class="quiet" type="reset">Xóa nội dung</button></div>
     <div id="status" class="notice" role="status" hidden></div>
@@ -38,7 +39,16 @@
 <script>
 (() => {
  const content=document.querySelector('#content'), count=document.querySelector('#count'), form=document.querySelector('#sendForm'), status=document.querySelector('#status');
+ const attachment=document.querySelector('#attachment'), preview=document.querySelector('#attachmentPreview');
+ const MAX_IMAGE_SIZE=10*1024*1024, BUCKET='cfs-images';
  const show=(t)=>{status.hidden=false;status.textContent=t};
+ attachment.addEventListener('change',()=>{
+  preview.replaceChildren(); preview.hidden=true;
+  const file=attachment.files[0]; if(!file)return;
+  if(!file.type.startsWith('image/')){show('Chỉ được chọn tệp ảnh, không hỗ trợ video.');attachment.value='';return;}
+  if(file.size>MAX_IMAGE_SIZE){show('Ảnh vượt quá 10 MB. Vui lòng chọn ảnh nhỏ hơn hoặc bằng 10 MB.');attachment.value='';return;}
+  const img=document.createElement('img');img.alt='Ảnh xem trước';img.src=URL.createObjectURL(file);preview.append(img);preview.hidden=false;
+ });
  content.addEventListener('input',()=>count.textContent=content.value.length+'/3000');
  form.addEventListener('submit',async e=>{
   e.preventDefault();
@@ -46,17 +56,27 @@
   if(text.length<10){show('Nội dung cần có ít nhất 10 ký tự.');return;}
   if(!document.querySelector('#rulesConsent').checked){show('Bạn cần xác nhận đã đọc và đồng ý tuân thủ nội quy trước khi gửi.');return;}
   const button=form.querySelector('button[type="submit"]'); button.disabled=true; button.textContent='Đang gửi…';
+  let uploadedPath=null;
   try {
    if(!window.supabase||!window.THD_SUPABASE_URL||!window.THD_SUPABASE_KEY) throw new Error('Chưa tải được cấu hình kết nối.');
    const client=window.supabase.createClient(window.THD_SUPABASE_URL,window.THD_SUPABASE_KEY);
-   const {error}=await client.from('confessions').insert({content:text,status:'pending'});
+   const file=attachment.files[0];
+   if(file && (!file.type.startsWith('image/') || file.size>MAX_IMAGE_SIZE)) throw new Error('Chỉ nhận 1 ảnh tối đa 10 MB, không nhận video.');
+   if(file){
+    const ext=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif' })[file.type];
+    if(!ext) throw new Error('Định dạng ảnh chưa được hỗ trợ. Hãy dùng JPG, PNG, WEBP hoặc GIF.');
+    uploadedPath='pending/'+crypto.randomUUID()+'.'+ext;
+    const {error:uploadError}=await client.storage.from(BUCKET).upload(uploadedPath,file,{contentType:file.type,upsert:false});
+    if(uploadError) throw new Error('Tải ảnh lên thất bại. Kiểm tra cấu hình Storage của Supabase. '+uploadError.message);
+   }
+   const {error}=await client.from('confessions').insert({content:text,status:'pending',attachment_path:uploadedPath});
    if(error) throw error;
    show('Đã gửi confession thành công. Bài sẽ được quản trị viên kiểm duyệt trước khi đăng.');
-   content.value='';count.textContent='0/3000';document.querySelector('#rulesConsent').checked=false;document.querySelector('#attachment').value='';
-  } catch(err) { console.error(err); show('Chưa gửi được bài. Vui lòng thử lại sau hoặc báo quản trị viên kiểm tra cấu hình Supabase.'); }
+   content.value='';count.textContent='0/3000';document.querySelector('#rulesConsent').checked=false;attachment.value='';preview.replaceChildren();preview.hidden=true;
+  } catch(err) { console.error(err); show(err.message||'Chưa gửi được bài. Vui lòng thử lại sau hoặc báo quản trị viên kiểm tra cấu hình Supabase.'); }
   finally {button.disabled=false;button.textContent='Gửi confession';}
  });
- form.addEventListener('reset',()=>setTimeout(()=>count.textContent='0/3000',0));
+ form.addEventListener('reset',()=>setTimeout(()=>{count.textContent='0/3000';preview.replaceChildren();preview.hidden=true;},0));
  const body=document.body,btn=document.querySelector('#themeToggle');const saved=localStorage.getItem('thd_theme')||'light';body.dataset.theme=saved;
  function paint(){if(btn)btn.textContent=body.dataset.theme==='dark'?'☀️ Giao diện sáng':'🌙 Giao diện tối'}
  paint();if(btn)btn.addEventListener('click',()=>{body.dataset.theme=body.dataset.theme==='dark'?'light':'dark';localStorage.setItem('thd_theme',body.dataset.theme);paint()});
