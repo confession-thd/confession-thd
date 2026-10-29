@@ -21,3 +21,10 @@ body[data-theme="dark"] .tagline{color:#d0d6e2}
 body[data-theme="dark"] .warning{background:#382d19;color:#f6dfaa;border-color:#66502b}
 body[data-theme="dark"] .notice{background:#1e3455;color:#d9e7ff}
 @media(max-width:560px){.topbar{align-items:flex-start}.top-links{gap:8px}.top-links .admin-link{font-size:12px}}
+
+/* Trình soạn bài đăng Facebook */
+.publisher-select{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:.92rem}
+.publisher-select input,.publisher-row input{width:auto;min-width:18px}
+.publisher-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border,#ddd);cursor:pointer}
+.publisher-row span{overflow-wrap:anywhere}
+#publicationText{width:100%;min-height:300px;resize:vertical;white-space:pre-wrap}
