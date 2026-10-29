@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confession Trường THPT Trần Hưng Đạo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="wrap">
+  <header class="topbar"><a class="brand" href="index.html">THĐ CONFESSIONS</a><nav class="top-links"><a class="admin-link" href="rules.html">Nội quy</a><a class="admin-link" href="https://www.facebook.com/tranhungdaoconfessionshy" target="_blank" rel="noopener">Fanpage</a><a class="admin-link" href="admin.html">Đăng nhập Admin</a><button class="theme-toggle" id="themeToggle" type="button">🌙 Giao diện tối</button></nav></header>
+  <img id="banner" class="banner" src="banner.jpg" alt="Banner confession">
+  <section class="card intro">
+    <h1 id="pageTitle">Confession Trường THPT Trần Hưng Đạo</h1>
+    <p id="tagline" class="tagline">Nơi để các cậu có thể bày tỏ những tâm tư, tình cảm khó có thể thổ lộ công khai!</p>
+  </section>
+  <form id="sendForm">
+    <section class="card field">
+      <label id="questionLabel" for="content">Điều cậu muốn gửi gắm là gì? <span class="required">*</span></label>
+      <textarea id="content" required minlength="10" maxlength="3000" placeholder="Hãy viết điều cậu muốn gửi gắm..." ></textarea>
+      <div class="under-row"><span class="hint">Không cần ghi tên thật. Bài sẽ được duyệt trước khi đăng.</span><span id="count">0/3000</span></div>
+    </section>
+    <section class="card field">
+      <label class="consent-label"><input id="rulesConsent" type="checkbox" required> <span>Tôi xác nhận đã đọc, hiểu và cam kết tuân thủ <a href="rules.html" target="_blank" rel="noopener">nội quy confession</a>.</span></label>
+      <p class="hint">Bạn cần tích xác nhận này trước khi gửi bài.</p>
+    </section>
+    <section class="card field">
+      <label for="attachment">Cậu có muốn kèm ảnh không?</label>
+      <input id="attachment" type="file" accept="image/*">
+      <p class="hint">Tính năng tải ảnh chưa được bật. Không gửi ảnh có thông tin riêng tư của người khác.</p>
+    </section>
+    <div class="actions"><button class="primary" type="submit">Gửi confession</button><button class="quiet" type="reset">Xóa nội dung</button></div>
+    <div id="status" class="notice" role="status" hidden></div>
+  </form>
+  <footer>Confession được quản trị viên kiểm duyệt trước khi đăng lên Facebook Page.</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+(() => {
+ const content=document.querySelector('#content'), count=document.querySelector('#count'), form=document.querySelector('#sendForm'), status=document.querySelector('#status');
+ const show=(t)=>{status.hidden=false;status.textContent=t};
+ content.addEventListener('input',()=>count.textContent=content.value.length+'/3000');
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const text=content.value.trim();
+  if(text.length<10){show('Nội dung cần có ít nhất 10 ký tự.');return;}
+  if(!document.querySelector('#rulesConsent').checked){show('Bạn cần xác nhận đã đọc và đồng ý tuân thủ nội quy trước khi gửi.');return;}
+  const button=form.querySelector('button[type="submit"]'); button.disabled=true; button.textContent='Đang gửi…';
+  try {
+   if(!window.supabase||!window.THD_SUPABASE_URL||!window.THD_SUPABASE_KEY) throw new Error('Chưa tải được cấu hình kết nối.');
+   const client=window.supabase.createClient(window.THD_SUPABASE_URL,window.THD_SUPABASE_KEY);
+   const {error}=await client.from('confessions').insert({content:text,status:'pending'});
+   if(error) throw error;
+   show('Đã gửi confession thành công. Bài sẽ được quản trị viên kiểm duyệt trước khi đăng.');
+   content.value='';count.textContent='0/3000';document.querySelector('#rulesConsent').checked=false;document.querySelector('#attachment').value='';
+  } catch(err) { console.error(err); show('Chưa gửi được bài. Vui lòng thử lại sau hoặc báo quản trị viên kiểm tra cấu hình Supabase.'); }
+  finally {button.disabled=false;button.textContent='Gửi confession';}
+ });
+ form.addEventListener('reset',()=>setTimeout(()=>count.textContent='0/3000',0));
+ const body=document.body,btn=document.querySelector('#themeToggle');const saved=localStorage.getItem('thd_theme')||'light';body.dataset.theme=saved;
+ function paint(){if(btn)btn.textContent=body.dataset.theme==='dark'?'☀️ Giao diện sáng':'🌙 Giao diện tối'}
+ paint();if(btn)btn.addEventListener('click',()=>{body.dataset.theme=body.dataset.theme==='dark'?'light':'dark';localStorage.setItem('thd_theme',body.dataset.theme);paint()});
+})();
+</script>
+<script>
+(function(){
+ const body=document.body, btn=document.querySelector('#themeToggle');
+ const saved=localStorage.getItem('thd_theme')||'light'; body.dataset.theme=saved;
+ function paint(){if(btn)btn.textContent=body.dataset.theme==='dark'?'☀️ Giao diện sáng':'🌙 Giao diện tối'}
+ paint(); if(btn)btn.addEventListener('click',()=>{body.dataset.theme=body.dataset.theme==='dark'?'light':'dark';localStorage.setItem('thd_theme',body.dataset.theme);paint()});
+})();
+</script>
+</body></html>
